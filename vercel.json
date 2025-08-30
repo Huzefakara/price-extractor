@@ -1,15 +1,14 @@
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "api/*.py",
-            "use": "@vercel/python"
+    "functions": {
+        "api/index.py": {
+            "runtime": "python3.9",
+            "maxDuration": 30
         },
-        {
-            "src": "static/**",
-            "use": "@vercel/static"
+        "api/extract.py": {
+            "runtime": "python3.9",
+            "maxDuration": 60
         }
-    ],
+    },
     "rewrites": [
         {
             "source": "/api/(.*)",
@@ -27,13 +26,5 @@
             "source": "/(.*)",
             "destination": "/api/index.py"
         }
-    ],
-    "functions": {
-        "api/index.py": {
-            "maxDuration": 30
-        },
-        "api/extract.py": {
-            "maxDuration": 60
-        }
-    }
+    ]
 }
