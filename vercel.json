@@ -1,28 +1,27 @@
 {
-    "functions": {
-        "api/index.py": {
-            "maxDuration": 30
-        },
-        "api/extract.py": {
-            "maxDuration": 60
+    "version": 2,
+    "builds": [
+        {
+            "src": "api/**/*.py",
+            "use": "@vercel/python"
         }
-    },
-    "rewrites": [
+    ],
+    "routes": [
         {
-            "source": "/api/(.*)",
-            "destination": "/api/$1"
+            "src": "/api/(.*)",
+            "dest": "/api/$1"
         },
         {
-            "source": "/csv-upload",
-            "destination": "/api/index.py"
+            "src": "/csv-upload",
+            "dest": "/api/index.py"
         },
         {
-            "source": "/static/(.*)",
-            "destination": "/static/$1"
+            "src": "/static/(.*)",
+            "dest": "/static/$1"
         },
         {
-            "source": "/(.*)",
-            "destination": "/api/index.py"
+            "src": "/(.*)",
+            "dest": "/api/index.py"
         }
     ]
 }
