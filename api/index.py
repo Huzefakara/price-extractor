@@ -3,6 +3,10 @@ import os
 
 app = Flask(__name__)
 
+# Vercel serverless function configuration
+# This function will timeout after 300 seconds (5 minutes)
+# For large CSV processing, consider splitting into smaller batches
+
 # Read the HTML template
 def get_html_template():
     template_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'index.html')
@@ -32,6 +36,14 @@ def get_html_template():
                     <h1>Price Extractor Machine</h1>
                 </div>
                 <p class="subtitle">Extract prices from multiple e-commerce websites instantly</p>
+                <nav class="nav-links">
+                    <a href="/" class="nav-link active">
+                        <i class="fas fa-link"></i> URL Extraction
+                    </a>
+                    <a href="/csv-upload" class="nav-link">
+                        <i class="fas fa-file-csv"></i> CSV Upload
+                    </a>
+                </nav>
             </div>
         </header>
 

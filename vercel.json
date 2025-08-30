@@ -28,14 +28,6 @@
             "dest": "/api/index.py"
         }
     ],
-    "functions": {
-        "api/extract.py": {
-            "maxDuration": 300
-        },
-        "api/index.py": {
-            "maxDuration": 300
-        }
-    },
     "headers": [
         {
             "source": "/static/(.*)",
