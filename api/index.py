@@ -1,5 +1,24 @@
-from flask import Flask, render_template_string, request, redirect, url_for
-import os
+try:
+    from flask import Flask, render_template_string, request, redirect, url_for
+    import os
+except ImportError as e:
+    # Fallback for import issues
+    print(f"Import error: {e}")
+    
+    class MockFlask:
+        def __init__(self, *args, **kwargs):
+            pass
+        def route(self, *args, **kwargs):
+            def decorator(f):
+                return f
+            return decorator
+    
+    Flask = MockFlask
+    render_template_string = lambda x: x
+    request = None
+    redirect = lambda x: x
+    url_for = lambda x: x
+    os = type('os', (), {'path': type('path', (), {'dirname': lambda x: '.', 'abspath': lambda x: x, 'join': lambda *x: '/'.join(x)})()})()
 
 app = Flask(__name__)
 
@@ -38,69 +57,39 @@ def get_csv_template():
 <p>CSV upload interface here.</p>
 <p>Use /api/compare-csv for API access.</p></body></html>'''
 
-# Vercel handler
-def handler(event, context):
+# Vercel handler - simple approach for Flask
+def handler(event, context=None):
+    """Vercel serverless function entry point"""
     try:
-        from werkzeug.wrappers import Request, Response
-        from werkzeug.serving import WSGIRequestHandler
-        import io
-        
-        # Create a proper WSGI environment
-        if hasattr(event, 'environ'):
-            environ = event.environ
-        else:
-            # Fallback for different event formats
-            environ = {
-                'REQUEST_METHOD': getattr(event, 'method', 'GET'),
-                'PATH_INFO': getattr(event, 'path', '/'),
-                'QUERY_STRING': getattr(event, 'query', ''),
-                'CONTENT_TYPE': '',
-                'CONTENT_LENGTH': '',
-                'SERVER_NAME': 'localhost',
-                'SERVER_PORT': '80',
-                'wsgi.version': (1, 0),
-                'wsgi.url_scheme': 'https',
-                'wsgi.input': io.StringIO(''),
-                'wsgi.errors': io.StringIO(),
-                'wsgi.multithread': False,
-                'wsgi.multiprocess': True,
-                'wsgi.run_once': False
+        # For Vercel, we need to create a test client
+        with app.test_client() as client:
+            # Extract method and path from event
+            method = getattr(event, 'method', 'GET')
+            path = getattr(event, 'path', '/')
+            
+            # Handle different path formats
+            if path.startswith('/api/index'):
+                path = path.replace('/api/index', '')
+            if not path:
+                path = '/'
+                
+            # Make request to Flask app
+            if method == 'GET':
+                response = client.get(path)
+            elif method == 'POST':
+                response = client.post(path, data=getattr(event, 'body', ''))
+            else:
+                response = client.open(path=path, method=method)
+            
+            return {
+                'statusCode': response.status_code,
+                'headers': dict(response.headers),
+                'body': response.get_data(as_text=True)
             }
-        
-        response_data = []
-        status_info = []
-        headers_info = []
-        
-        def start_response(status, headers, exc_info=None):
-            status_info.append(status)
-            headers_info.extend(headers)
-            return response_data.append
-        
-        # Get response from Flask app
-        app_response = app(environ, start_response)
-        
-        # Collect response data
-        if hasattr(app_response, '__iter__'):
-            for data in app_response:
-                if data:
-                    response_data.append(data)
-        
-        # Join response data
-        if response_data:
-            body = b''.join(response_data) if isinstance(response_data[0], bytes) else ''.join(response_data)
-        else:
-            body = ''
-        
-        return {
-            'statusCode': int(status_info[0].split()[0]) if status_info else 200,
-            'headers': dict(headers_info) if headers_info else {'Content-Type': 'text/html'},
-            'body': body
-        }
-        
+            
     except Exception as e:
-        # Fallback error response
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'text/html'},
-            'body': f'<h1>Server Error</h1><p>Error: {str(e)}</p>'
+            'body': f'<h1>Price Extractor Machine</h1><p>Service temporarily unavailable. Error: {str(e)}</p>'
         }
