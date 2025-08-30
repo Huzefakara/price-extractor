@@ -1219,21 +1219,82 @@ def csv_upload_page():
     return render_template('csv_upload.html')
 
 # Vercel handler
-def handler(request):
-    def start_response(status, headers, exc_info=None):
-        # This function should return a write callable, but for Vercel
-        # we can return a simple function that handles bytes
-        def write(data):
-            return data
-        return write
-    
-    # Get the WSGI response
-    response = app(request.environ, start_response)
-    
-    # If response is an iterable, join it into a single response
-    if hasattr(response, '__iter__'):
-        return b''.join(response)
-    return response
+def handler(event, context):
+    try:
+        import io
+        
+        # Create a proper WSGI environment
+        if hasattr(event, 'environ'):
+            environ = event.environ
+        else:
+            # Fallback for different event formats
+            environ = {
+                'REQUEST_METHOD': getattr(event, 'method', 'GET'),
+                'PATH_INFO': getattr(event, 'path', '/'),
+                'QUERY_STRING': getattr(event, 'query', ''),
+                'CONTENT_TYPE': getattr(event, 'headers', {}).get('content-type', ''),
+                'CONTENT_LENGTH': str(len(getattr(event, 'body', '') or '')),
+                'SERVER_NAME': 'localhost',
+                'SERVER_PORT': '80',
+                'wsgi.version': (1, 0),
+                'wsgi.url_scheme': 'https',
+                'wsgi.input': io.BytesIO((getattr(event, 'body', '') or '').encode()),
+                'wsgi.errors': io.StringIO(),
+                'wsgi.multithread': False,
+                'wsgi.multiprocess': True,
+                'wsgi.run_once': False
+            }
+            
+            # Add headers to environ
+            headers = getattr(event, 'headers', {})
+            for key, value in headers.items():
+                key = key.upper().replace('-', '_')
+                if key not in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
+                    key = f'HTTP_{key}'
+                environ[key] = value
+        
+        response_data = []
+        status_info = []
+        headers_info = []
+        
+        def start_response(status, headers, exc_info=None):
+            status_info.append(status)
+            headers_info.extend(headers)
+            return response_data.append
+        
+        # Get response from Flask app
+        app_response = app(environ, start_response)
+        
+        # Collect response data
+        if hasattr(app_response, '__iter__'):
+            for data in app_response:
+                if data:
+                    response_data.append(data)
+        
+        # Join response data
+        if response_data:
+            if isinstance(response_data[0], bytes):
+                body = b''.join(response_data).decode('utf-8')
+            else:
+                body = ''.join(response_data)
+        else:
+            body = ''
+        
+        return {
+            'statusCode': int(status_info[0].split()[0]) if status_info else 200,
+            'headers': dict(headers_info) if headers_info else {'Content-Type': 'application/json'},
+            'body': body
+        }
+        
+    except Exception as e:
+        # Fallback error response
+        import traceback
+        error_details = traceback.format_exc()
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': f'{{"error": "Server Error: {str(e)}", "details": "{error_details}"}}'
+        }
 
 # For local development
 if __name__ == '__main__':
