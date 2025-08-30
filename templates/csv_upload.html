@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Price Comparison Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .upload-section {
+            padding: 40px;
+        }
+
+        .upload-area {
+            border: 3px dashed #3498db;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #2980b9;
+            background: #e3f2fd;
+        }
+
+        .upload-area.dragover {
+            border-color: #27ae60;
+            background: #e8f5e8;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            color: #3498db;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .file-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4f8;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #3498db;
+        }
+
+        .product-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .price-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .our-price {
+            font-size: 1.2em;
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .competitor-results {
+            margin-top: 15px;
+        }
+
+        .competitor-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .status-success {
+            border-left-color: #27ae60;
+        }
+
+        .status-warning {
+            border-left-color: #f39c12;
+        }
+
+        .status-error {
+            border-left-color: #e74c3c;
+        }
+
+        .format-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .format-info h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .format-example {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 CSV Price Comparison Tool</h1>
+            <p>Upload your product CSV and compare prices with competitors automatically</p>
+            <nav class="nav-links">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-link"></i> URL Extraction
+                </a>
+                <a href="/csv-upload" class="nav-link active">
+                    <i class="fas fa-file-csv"></i> CSV Upload
+                </a>
+            </nav>
+        </div>
+
+        <div class="upload-section">
+            <div class="format-info">
+                <h3>📋 CSV Format Requirements</h3>
+                <p><strong>Required columns:</strong> product_name, our_price</p>
+                <p><strong>Competitor URLs:</strong> Any column containing "competitor" or "url"</p>
+                <div class="format-example">
+                    product_name,our_price,competitor_url_1,competitor_url_2
+                    iPhone 15 Pro,£999,https://amazon.co.uk/...,https://johnlewis.com/...
+                    Samsung Galaxy S24,£799,https://currys.co.uk/...,https://amazon.co.uk/...
+                </div>
+            </div>
+
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <h3>Drop your CSV file here or click to browse</h3>
+                <p>No limit on number of products</p>
+                <input type="file" class="file-input" id="fileInput" accept=".csv">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    Choose CSV File
+                </button>
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <h4>📄 Selected File:</h4>
+                <p id="fileName"></p>
+                <button class="upload-btn" id="processBtn" onclick="processFile()">
+                    🔍 Process Price Comparison
+                </button>
+            </div>
+
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="results" id="results">
+                <h3>📊 Comparison Results</h3>
+                <div id="resultsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const processBtn = document.getElementById('processBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const results = document.getElementById('results');
+        const resultsList = document.getElementById('resultsList');
+
+        let selectedFile = null;
+
+        // File drop handling
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].name.endsWith('.csv')) {
+                handleFileSelect(files[0]);
+            } else {
+                alert('Please select a valid CSV file');
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileInfo.style.display = 'block';
+            results.style.display = 'none';
+        }
+
+        async function processFile() {
+            if (!selectedFile) {
+                alert('Please select a CSV file first');
+                return;
+            }
+
+            processBtn.disabled = true;
+            processBtn.textContent = '🔄 Processing...';
+            progressBar.style.display = 'block';
+
+            // Animate progress bar
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+            }, 500);
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                const response = await fetch('/api/compare-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                    displayResults(data);
+                }, 500);
+
+            } catch (error) {
+                clearInterval(progressInterval);
+                progressBar.style.display = 'none';
+                alert('Error processing file: ' + error.message);
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = '🔍 Process Price Comparison';
+            }
+        }
+
+        function displayResults(data) {
+            if (data.error) {
+                resultsList.innerHTML = `<div class="result-item status-error">
+                    <h4>❌ Error</h4>
+                    <p>${data.error}</p>
+                </div>`;
+                results.style.display = 'block';
+                return;
+            }
+
+            const summary = data.summary;
+            let summaryHtml = `
+                <div class="result-item status-success">
+                    <h4>📈 Overall Summary</h4>
+                    <div class="price-info">
+                        <span>Total Products: ${summary.total_products}</span>
+                        <span>Competitive: ${summary.competitive_products}</span>
+                        <span>Need Review: ${summary.needs_adjustment}</span>
+                    </div>
+                    <p><strong>Status:</strong> ${summary.overall_status.toUpperCase()}</p>
+                </div>
+            `;
+
+            let productsHtml = '';
+            data.results.forEach(product => {
+                const statusClass = product.status === 'success' ? 'status-success' : 'status-error';
+                const recommendation = product.summary?.overall_recommendation || 'unknown';
+                const recClass = recommendation === 'competitive' ? 'status-success' : 'status-warning';
+
+                let competitorHtml = '';
+                if (product.competitor_results) {
+                    product.competitor_results.forEach(comp => {
+                        const compStatus = comp.status === 'success' ? '✅' : '❌';
+                        const compPrice = comp.price || 'No price found';
+                        const compComparison = comp.comparison ? ` (${comp.comparison.toUpperCase()})` : '';
+
+                        // Add price type and discount information
+                        let priceTypeInfo = '';
+                        if (comp.price_details && comp.price_details.price_type) {
+                            const priceType = comp.price_details.price_type;
+                            priceTypeInfo = ` [${priceType.toUpperCase()}]`;
+
+                            if (comp.price_details.discount_percentage) {
+                                priceTypeInfo += ` (-${comp.price_details.discount_percentage}%)`;
+                            }
+
+                            if (comp.price_details.original_price && comp.price_details.original_price !== comp.price) {
+                                priceTypeInfo += ` (Was: ${comp.price_details.original_price})`;
+                            }
+                        }
+
+                        competitorHtml += `
+                            <div class="competitor-item">
+                                ${compStatus} ${comp.url.substring(0, 40)}... - ${compPrice}${compComparison}${priceTypeInfo}
+                            </div>
+                        `;
+                    });
+                }
+
+                productsHtml += `
+                    <div class="result-item ${statusClass}">
+                        <div class="product-name">${product.product_name}</div>
+                        <div class="price-info">
+                            <span class="our-price">Our Price: ${product.our_price}</span>
+                            <span class="recommendation ${recClass}">
+                                ${recommendation.replace('_', ' ').toUpperCase()}
+                            </span>
+                        </div>
+                        ${product.summary ? `
+                            <p><strong>Analysis:</strong> Checked ${product.summary.total_competitors} competitors, 
+                            ${product.summary.successful_extractions} successful extractions</p>
+                            <p><strong>Position:</strong> Cheaper than ${product.summary.lower_than_competitors}, 
+                            more expensive than ${product.summary.higher_than_competitors}</p>
+                        ` : ''}
+                        <div class="competitor-results">
+                            ${competitorHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            resultsList.innerHTML = summaryHtml + productsHtml;
+            results.style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>
