@@ -1,0 +1,17 @@
+{
+    "name": "price-extractor-machine",
+    "version": "1.0.0",
+    "description": "A web-based price extraction tool for e-commerce websites",
+    "scripts": {
+        "dev": "python app.py",
+        "build": "echo 'Build completed'"
+    },
+    "keywords": [
+        "price",
+        "extraction",
+        "web-scraping",
+        "e-commerce"
+    ],
+    "author": "Your Name",
+    "license": "MIT"
+}

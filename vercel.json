@@ -2,41 +2,38 @@
     "version": 2,
     "builds": [
         {
-            "src": "api/index.py",
+            "src": "api/*.py",
             "use": "@vercel/python"
         },
         {
-            "src": "api/extract.py",
-            "use": "@vercel/python"
+            "src": "static/**",
+            "use": "@vercel/static"
         }
     ],
-    "routes": [
+    "rewrites": [
         {
-            "src": "/api/(.*)",
-            "dest": "/api/$1"
+            "source": "/api/(.*)",
+            "destination": "/api/$1"
         },
         {
-            "src": "/csv-upload",
-            "dest": "/api/index.py"
+            "source": "/csv-upload",
+            "destination": "/api/index.py"
         },
-        {
-            "src": "/static/(.*)",
-            "dest": "/static/$1"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/api/index.py"
-        }
-    ],
-    "headers": [
         {
             "source": "/static/(.*)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                }
-            ]
+            "destination": "/static/$1"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/api/index.py"
         }
-    ]
+    ],
+    "functions": {
+        "api/index.py": {
+            "maxDuration": 30
+        },
+        "api/extract.py": {
+            "maxDuration": 60
+        }
+    }
 }
