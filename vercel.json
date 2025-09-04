@@ -1,27 +1,24 @@
 {
     "version": 2,
-    "builds": [
+    "functions": {
+        "api/*.py": {}
+    },
+    "rewrites": [
         {
-            "src": "api/**/*.py",
-            "use": "@vercel/python"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/api/(.*)",
-            "dest": "/api/$1"
+            "source": "/api/extract",
+            "destination": "/api/extract.py"
         },
         {
-            "src": "/csv-upload",
-            "dest": "/api/index.py"
+            "source": "/api/compare-csv",
+            "destination": "/api/compare-csv.py"
         },
         {
-            "src": "/static/(.*)",
-            "dest": "/static/$1"
+            "source": "/csv-upload",
+            "destination": "/api/index.py"
         },
         {
-            "src": "/(.*)",
-            "dest": "/api/index.py"
+            "source": "/",
+            "destination": "/api/index.py"
         }
     ]
 }
