@@ -1,7 +1,6 @@
+from http.server import BaseHTTPRequestHandler
 import json
-import os
 import re
-import traceback
 
 # Try to import optional dependencies with fallbacks
 try:
@@ -13,117 +12,82 @@ except ImportError:
     BeautifulSoup = None
     DEPENDENCIES_AVAILABLE = False
 
-# Main handler function for Vercel (this is the entry point)
-def handler(request, context=None):
-    """Vercel serverless function handler for price extraction"""
-    try:
-        # Handle different request formats for Vercel
-        data = {}
-        
-        # Check if it's a Vercel request with body
-        if hasattr(request, 'body'):
-            try:
-                import json as json_module
-                if isinstance(request.body, bytes):
-                    data = json_module.loads(request.body.decode('utf-8'))
-                elif isinstance(request.body, str):
-                    data = json_module.loads(request.body)
-                else:
-                    data = request.body or {}
-            except:
-                data = {}
-        elif hasattr(request, 'get_json'):
-            # Flask-like request object
-            try:
-                data = request.get_json() or {}
-            except:
-                data = {}
-        elif hasattr(request, 'json'):
-            # Standard request object
-            try:
-                data = request.json or {}
-            except:
-                data = {}
-        elif isinstance(request, dict):
-            # Direct dict input
-            data = request
-        else:
-            data = {}
-        
-        # Extract URLs from the request
-        urls = data.get('urls', [])
-        
-        if not urls:
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type'
-                },
-                'body': json.dumps({'error': 'No URLs provided'})
-            }
-        
-        # Process URLs (simplified for serverless environment)
-        results = []
-        for i, url in enumerate(urls[:10]):  # Limit to 10 URLs for serverless
-            try:
-                if DEPENDENCIES_AVAILABLE:
-                    # Try to extract real price
-                    price_result = extract_price_simple(url)
-                    results.append(price_result)
-                else:
-                    # Fallback to dummy data if dependencies missing
+class handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        try:
+            # Read request body
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            data = json.loads(post_data)
+            
+            # Extract URLs from the request
+            urls = data.get('urls', [])
+            
+            if not urls:
+                self.send_error_response({'error': 'No URLs provided'}, 400)
+                return
+            
+            # Process URLs (simplified for serverless environment)
+            results = []
+            for i, url in enumerate(urls[:10]):  # Limit to 10 URLs for serverless
+                try:
+                    if DEPENDENCIES_AVAILABLE:
+                        # Try to extract real price
+                        price_result = extract_price_simple(url)
+                        results.append(price_result)
+                    else:
+                        # Fallback to dummy data if dependencies missing
+                        results.append({
+                            'url': url,
+                            'price': f'£{99.99 + i}',  # Dummy price for testing
+                            'status': 'success',
+                            'message': 'Test mode - dependencies not available'
+                        })
+                except Exception as e:
                     results.append({
                         'url': url,
-                        'price': f'£{99.99 + i}',  # Dummy price for testing
-                        'status': 'success',
-                        'message': 'Test mode - dependencies not available'
+                        'price': None,
+                        'status': 'error',
+                        'error': str(e)
                     })
-            except Exception as e:
-                results.append({
-                    'url': url,
-                    'price': None,
-                    'status': 'error',
-                    'error': str(e)
-                })
-        
-        successful = len([r for r in results if r['status'] == 'success'])
-        failed = len(results) - successful
-        
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
-            },
-            'body': json.dumps({
+            
+            successful = len([r for r in results if r['status'] == 'success'])
+            failed = len(results) - successful
+            
+            response_data = {
                 'results': results,
                 'total': len(results),
                 'successful': successful,
                 'failed': failed,
                 'dependencies_available': DEPENDENCIES_AVAILABLE
-            })
-        }
-        
-    except Exception as e:
-        error_details = {
-            'error': str(e),
-            'traceback': traceback.format_exc(),
-            'request_received': str(request)[:500]  # Limit size
-        }
-        
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps(error_details)
-        }
+            }
+            
+            self.send_success_response(response_data)
+            
+        except Exception as e:
+            error_details = {
+                'error': str(e),
+                'message': 'Failed to process request'
+            }
+            self.send_error_response(error_details, 500)
+    
+    def send_success_response(self, data):
+        response = json.dumps(data)
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+        self.wfile.write(response.encode())
+    
+    def send_error_response(self, error_data, status_code):
+        response = json.dumps(error_data)
+        self.send_response(status_code)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(response.encode())
 
 def extract_price_simple(url):
     """Simple price extraction function"""
@@ -177,30 +141,3 @@ def extract_price_simple(url):
             'status': 'error',
             'error': str(e)
         }
-
-# WSGI Application Handler (if needed)
-def application(environ, start_response):
-    """WSGI application for compatibility"""
-    try:
-        # Simple WSGI response
-        status = '200 OK'
-        headers = [('Content-Type', 'application/json'),
-                   ('Access-Control-Allow-Origin', '*')]
-        start_response(status, headers)
-        
-        response_data = {
-            'message': 'Price extraction API is running',
-            'endpoints': ['/api/extract'],
-            'status': 'success',
-            'dependencies_available': DEPENDENCIES_AVAILABLE
-        }
-        
-        return [json.dumps(response_data).encode('utf-8')]
-    
-    except Exception as e:
-        status = '500 Internal Server Error'
-        headers = [('Content-Type', 'application/json')]
-        start_response(status, headers)
-        
-        error_response = {'error': str(e)}
-        return [json.dumps(error_response).encode('utf-8')]

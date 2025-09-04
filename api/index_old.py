@@ -127,9 +127,7 @@ class handler(BaseHTTPRequestHandler):
         <div class="input-section">
             <h3>Extract Prices from URLs</h3>
             <p>Enter one URL per line to extract prices:</p>
-            <textarea id="urlInput" placeholder="Enter URLs here, one per line...
-https://example.com/product1
-https://example.com/product2"></textarea>
+            <textarea id="urlInput" placeholder="Enter URLs here, one per line...\nhttps://example.com/product1\nhttps://example.com/product2"></textarea>
             <br>
             <button onclick="extractPrices()">Extract Prices</button>
             <button onclick="clearResults()">Clear Results</button>
@@ -202,9 +200,24 @@ https://example.com/product2"></textarea>
 </body>
 </html>'''
         
-        # Send response
-        self.send_response(200)
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        self.wfile.write(html_content.encode('utf-8'))
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'text/html; charset=utf-8',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': html_content
+        }
+        
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'error': str(e),
+                'path': str(request)
+            })
+        }
