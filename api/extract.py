@@ -71,6 +71,14 @@ class handler(BaseHTTPRequestHandler):
             }
             self.send_error_response(error_details, 500)
     
+    def do_OPTIONS(self):
+        # Handle CORS preflight requests
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+    
     def send_success_response(self, data):
         response = json.dumps(data)
         self.send_response(200)
