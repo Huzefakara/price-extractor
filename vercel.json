@@ -1,16 +1,11 @@
 {
     "version": 2,
-    "functions": {
-        "api/extract.py": {
-            "runtime": "python3.9"
-        },
-        "api/compare-csv.py": {
-            "runtime": "python3.9"
-        },
-        "api/index.py": {
-            "runtime": "python3.9"
+    "builds": [
+        {
+            "src": "api/*.py",
+            "use": "@vercel/python"
         }
-    },
+    ],
     "routes": [
         {
             "src": "/api/extract",
