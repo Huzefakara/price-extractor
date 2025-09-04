@@ -1,7 +1,7 @@
 import json
 import os
 
-def handler(request):
+def handler(request, context=None):
     """Vercel serverless function handler for main pages"""
     try:
         # Handle different request formats
@@ -226,6 +226,6 @@ def handler(request):
             },
             'body': json.dumps({
                 'error': str(e),
-                'path': str(event)
+                'path': str(request)
             })
         }

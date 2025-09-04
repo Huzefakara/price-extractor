@@ -14,11 +14,25 @@ except ImportError:
     DEPENDENCIES_AVAILABLE = False
 
 # Main handler function for Vercel (this is the entry point)
-def handler(request):
+def handler(request, context=None):
     """Vercel serverless function handler for price extraction"""
     try:
-        # Handle Vercel Request object
-        if hasattr(request, 'get_json'):
+        # Handle different request formats for Vercel
+        data = {}
+        
+        # Check if it's a Vercel request with body
+        if hasattr(request, 'body'):
+            try:
+                import json as json_module
+                if isinstance(request.body, bytes):
+                    data = json_module.loads(request.body.decode('utf-8'))
+                elif isinstance(request.body, str):
+                    data = json_module.loads(request.body)
+                else:
+                    data = request.body or {}
+            except:
+                data = {}
+        elif hasattr(request, 'get_json'):
             # Flask-like request object
             try:
                 data = request.get_json() or {}
@@ -30,9 +44,11 @@ def handler(request):
                 data = request.json or {}
             except:
                 data = {}
+        elif isinstance(request, dict):
+            # Direct dict input
+            data = request
         else:
-            # Fallback for direct dict input
-            data = request if isinstance(request, dict) else {}
+            data = {}
         
         # Extract URLs from the request
         urls = data.get('urls', [])

@@ -1,7 +1,7 @@
 import json
 import traceback
 
-def handler(request):
+def handler(request, context=None):
     """Vercel serverless function handler for CSV price comparison"""
     try:
         # Handle different request formats
