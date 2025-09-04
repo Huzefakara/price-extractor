@@ -1,18 +1,17 @@
 import json
 import os
 
-def handler(event, context=None):
+def handler(request):
     """Vercel serverless function handler for main pages"""
     try:
-        # Handle different event formats
-        if isinstance(event, dict):
-            path = event.get('path', '/')
-            if 'rawPath' in event:
-                path = event['rawPath']
-            elif 'requestContext' in event and 'http' in event['requestContext']:
-                path = event['requestContext']['http'].get('path', '/')
-        else:
-            path = '/'
+        # Handle different request formats
+        path = '/'
+        if hasattr(request, 'path'):
+            path = request.path
+        elif hasattr(request, 'url'):
+            path = request.url
+        elif isinstance(request, dict):
+            path = request.get('path', request.get('rawPath', '/'))
         
         # Route handling
         if path.startswith('/csv-upload') or path == '/csv-upload':

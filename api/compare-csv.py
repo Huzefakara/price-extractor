@@ -1,23 +1,22 @@
 import json
 import traceback
 
-def handler(event, context=None):
+def handler(request):
     """Vercel serverless function handler for CSV price comparison"""
     try:
-        # Handle different event formats
-        if isinstance(event, dict):
-            if 'body' in event:
-                if isinstance(event['body'], str):
-                    try:
-                        data = json.loads(event['body'])
-                    except:
-                        data = {}
-                else:
-                    data = event['body'] or {}
-            else:
-                data = event
+        # Handle different request formats
+        if hasattr(request, 'get_json'):
+            try:
+                data = request.get_json() or {}
+            except:
+                data = {}
+        elif hasattr(request, 'json'):
+            try:
+                data = request.json or {}
+            except:
+                data = {}
         else:
-            data = {}
+            data = request if isinstance(request, dict) else {}
         
         return {
             'statusCode': 200,

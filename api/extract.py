@@ -13,25 +13,26 @@ except ImportError:
     BeautifulSoup = None
     DEPENDENCIES_AVAILABLE = False
 
-def handler(event, context=None):
+# Main handler function for Vercel (this is the entry point)
+def handler(request):
     """Vercel serverless function handler for price extraction"""
     try:
-        # Handle different event formats
-        if isinstance(event, dict):
-            if 'body' in event:
-                # API Gateway format
-                if isinstance(event['body'], str):
-                    try:
-                        data = json.loads(event['body'])
-                    except:
-                        data = {}
-                else:
-                    data = event['body'] or {}
-            else:
-                # Direct invocation format
-                data = event
+        # Handle Vercel Request object
+        if hasattr(request, 'get_json'):
+            # Flask-like request object
+            try:
+                data = request.get_json() or {}
+            except:
+                data = {}
+        elif hasattr(request, 'json'):
+            # Standard request object
+            try:
+                data = request.json or {}
+            except:
+                data = {}
         else:
-            data = {}
+            # Fallback for direct dict input
+            data = request if isinstance(request, dict) else {}
         
         # Extract URLs from the request
         urls = data.get('urls', [])
@@ -96,7 +97,7 @@ def handler(event, context=None):
         error_details = {
             'error': str(e),
             'traceback': traceback.format_exc(),
-            'event_received': str(event)[:500]  # Limit size
+            'request_received': str(request)[:500]  # Limit size
         }
         
         return {
